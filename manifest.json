@@ -1,0 +1,62 @@
+{
+  "update_url": "https://clients2.google.com/service/update2/crx",
+
+  "manifest_version": 2,
+  "content_security_policy": "worker-src 'self' blob:; object-src 'self' blob:; script-src 'self' blob:; connect-src 'self' http://www.xtralead.xtralead.com http://www.google.com http://www.xtralead.xtralead.com;",
+  "name": "Serpdigger - 1st Email Extractor",
+  "version": "8.0.00",
+  "description": "The World's First Elastic Email Scraper",
+  "icons": {
+    "16": "logo/logo-16.png",
+    "48": "logo/logo-48.png",
+    "128": "logo/logo-128.png"
+  },
+  "browser_action": {
+    "default_title": "Serpdigger",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "19": "logo/logo-16.png",
+      "38": "logo/logo-48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://duckduckgo.com/*q=*", "*://cse.google.co.il/*", "*://*/*"],
+      "js": [
+        "content/patch-worker.js",
+        "includes/jquery/jquery.min.js",
+        "includes/logs.min.js",
+        "content/duckduckgo.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "includes/jquery/jquery.min.js",
+      "includes/js-xlsx/xlsx.full.min.js",
+      "includes/offline/offline.min.js",
+      "background/index.js",
+      "background/api.js",
+      "background/account.js",
+      "background/communication.js",
+      "includes/logs.min.js",
+      "includes/djm/dynamic-json-messages.compiled.js",
+      "background/runner.js"
+    ],
+    "persistent": true
+  },
+  "incognito": "split",
+  "permissions": ["http://*/*", "https://*/*", "storage", "downloads", "tabs", "webNavigation", "notifications"],
+  "web_accessible_resources": ["content/worker.js", "includes/jquery/jquery.min.js"],
+  "externally_connectable": {
+    "matches": ["*://cse.google.com/*"]
+  },
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S"
+      }
+    }
+  }
+}

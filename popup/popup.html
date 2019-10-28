@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf8" />
+    <title>Serpdigger</title>
+    <link href="popup.min.css" rel="stylesheet" />
+    <link href="../includes/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="../includes/shoelace-css/switches.min.css" rel="stylesheet" />
+    <link href="../includes/bootstrap-table/bootstrap-table.min.css" rel="stylesheet" />
+    <link href="../includes/antd/style.min.css" rel="stylesheet" />
+    <link href="../includes/offline/offline-theme-slide.min.css" rel="stylesheet" />
+    <link href="../includes/offline/offline-language-english.min.css" rel="stylesheet" />
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+    <style>
+      body {
+        font-size: small;
+      }
+    </style>
+  </head>
+  <body class="unselectable">
+    <div class="container-fluid custom_placeholder" style="font-size: 14px; font-weight: 400;">
+      <div class="container-fluid" style="padding-top: 15px; padding-bottom: 15px;">
+        <div class="row">
+          <div class="col-sm-3 text-left" style="font-size: 13px; padding: 0px; padding-top: 0px;">
+            <p class="text-primary">
+              Serpdigger
+              <span class="text-primary"> v<span id="version"></span> </span>
+            </p>
+          </div>
+          <div class="col-sm-6 text-center" style="font-size: 13.5px;">
+            <div id="checking-account" class="text-muted" style="display: none; margin-bottom: -21px;">
+              Checking account status...
+            </div>
+            <div class="trial" style="display: none; margin-top: -2px; margin-bottom: -21px;">
+              <p class="text-muted">
+                You are using a trial version limited to 10 emails.
+                <br />
+                <span id="purchase-login-label"
+                  >Click <a href="http://www.serpdigger.com/buy" target="_blank">here</a> to purchase your FULL version or
+                  <a href="#" data-toggle="modal" data-target="#login-modal">login</a>.</span
+                >
+              </p>
+            </div>
+          </div>
+          <div class="container-fluid col-sm-3" style="font-size: 13px; padding: 0px;">
+            <div class="text-right">
+              <span class="text-secondary">Developed by: </span>
+              <a target="_blank" class="text-primary" href="http://www.roi.im">Yossi Bezalel</a>
+            </div>
+            <div class="text-right">
+              <span class="text-secondary">Improved by: </span>
+              <a href="http://www.roi.im" target="_blank" class="text-primary">Yossi Bezalel</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label for="cse-address-input" style="font-weight: 500; line-height: 32px;">Insert your CSE Main Address</label>
+          </div>
+        </div>
+        <div class="col-sm-8">
+          <div class="form-group" style="margin-left: -45px;">
+            <input id="cse-address-input" class="form-control" spellcheck="false" placeholder="https://cse.google.com/..." />
+          </div>
+        </div>
+      </div>
+      <div class="row" style="font-size: 14px;">
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label for="keyword-input" style="font-weight: 500;">Keywords</label>
+            <textarea
+              id="keyword-input"
+              style="resize: none;"
+              class="form-control"
+              rows="7"
+              placeholder="Project Manager"
+              spellcheck="false"
+            ></textarea>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label for="pattern-input" style="font-weight: 500;">@ Patterns</label>
+            <textarea
+              id="pattern-input"
+              style="resize: none;"
+              class="form-control"
+              rows="7"
+              placeholder="@gmail.com\n@yahoo.com"
+              spellcheck="false"
+            ></textarea>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <label for="location-input" style="font-weight: 500;">Location</label>
+            <textarea
+              id="location-input"
+              style="resize: none;"
+              class="form-control"
+              rows="7"
+              placeholder="Alabama\nAlaska\nArizona\nArkansas\nCalifornia\nColorado\nConnecticut"
+              spellcheck="false"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+      <div id="runner-status-query" class="row justify-content-center" style="display: none; padding-top: 10px; padding-bottom: 10px;">
+        <div id="progress-indicator-wrapper" class="fade-in">
+          <div
+            id="progress-indicator"
+            class="spinner-border spinner-border-sm text-primary"
+            role="status"
+            style="margin-top: 2px; margin-right: 7px;"
+          ></div>
+        </div>
+        <h6>
+          <span id="query-status-text"></span> <span id="current-query-text" class="text-primary"></span>
+          <span id="deep-search-status-text" class="text-primary"></span>
+        </h6>
+      </div>
+      <div class="row" style="font-size: 14px; padding-top: 10px;">
+        <div class="col-sm-4">
+          <div class="form-group">
+            <button id="toggle" class="btn btn-primary btn-lg btn-block" style="margin-bottom: 20px;">START</button>
+            <div
+              id="progress-running"
+              class="form-group"
+              style="display: none; margin-top: -10px; background-color: transparent; font-size: 23px; font-weight: 500;"
+            >
+              <div class="row justify-content-center">
+                <span class="text-primary" style="font-size: 23px; font-weight: 600;"
+                  ><span id="current-query">0</span>/<span id="total-queries">0</span></span
+                >
+              </div>
+              <div class="row justify-content-center" style="margin: -5px;">
+                <span class="text-primary" style="font-size: 18px; font-weight: 500;">queries</span>
+              </div>
+            </div>
+            <div
+              id="runner-status-indicator"
+              class="row justify-content-center"
+              style="display: none; margin-top: -2px; padding-bottom: 15px; background-color: transparent"
+            >
+              <label id="runner-status-text" class="control-label text-center" style="font-size: 24px; font-weight: 500; color: transparent"
+                >- - -</label
+              >
+            </div>
+            <div class="row" style="background-color: transparent;">
+              <label class="col-sm-9 control-label text-left" for="delay-input" style="font-weight: 500; padding-top: 6px;"
+                >Secs. delay b/w queries</label
+              >
+              <div class="col-3" style="padding: 0px 0; margin-left: -15px;">
+                <input id="delay-input" class="col form-control" type="number" min="0" max="99" maxlength="2" placeholder="0" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="form-group">
+            <div
+              id="collected-emails-counter"
+              class="form-group"
+              style="display: none; margin-top: -14px; padding-bottom: 1px; background-color: transparent; font-size: 23px; font-weight: 500;"
+            >
+              <div class="row justify-content-center">
+                <span
+                  id="collected-emails"
+                  class="text-muted"
+                  style="font-size: 32px; font-weight: 600;"
+                  data-to="0"
+                  data-from="0"
+                  data-duration="0"
+                ></span>
+              </div>
+              <div class="row justify-content-center" style="margin: -10px;">
+                <span id="collected-emails-subtext" class="text-muted" style="font-size: 18px; font-weight: 500;">unique emails</span>
+              </div>
+            </div>
+            <div class="text-center" style="margin-bottom: 24px;">
+              <button id="preview-download" class="btn btn-outline-secondary btn-lg btn-block" disabled="true">DOWNLOAD</button>
+            </div>
+            <div class="form-group row justify-content-center">
+              <span
+                id="deep-search-switch"
+                class="switch switch-sm"
+                style="font-size: 14px; font-weight: 450; margin-top: -3px"
+                data-toggle="tooltip"
+                title="Gives a second pass looking for more results per query"
+              >
+                <input id="deep-search-enabled" class="switch" type="checkbox" />
+                <label for="deep-search-enabled" style="margin: 5px; font-weight: 500;">Deep Search</label>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-4">
+          <div class="text-center" style="padding: 0 0px;">
+            <button id="help" class="btn btn-outline-primary btn-lg btn-block">HELP?</button>
+          </div>
+          <div id="buy-now-button" class="row justify-content-center" style="display: none; padding-top: 10px; cursor: pointer">
+            <span class="d-inline-block" tabindex="0" data-toggle="tooltip" title="Get your FULL license!">
+              <a href="http://www.serpdigger.com/buy" target="_blank"><img src="../data/buy_now"/></a>
+            </span>
+          </div>
+          <div id="hotkey-tip" class="row" style="display: none; padding-top: 12px;">
+            <div style="margin-top: 2px; margin-left: 12px; background-color: transparent">
+              <img src="../data/double_arrow_right" />
+            </div>
+            <label
+              class="col control-label text-justify"
+              style="font-size: 12px; font-weight: 500; padding-top: 0px; margin-left: -10px; padding-right: 19px;"
+            >
+              <b>Tip:</b> Press <div class="btn btn-small-key">Ctrl</div> <span style="font-size: medium;">+</span>
+              <div class="btn btn-small-key">Shift</div> <span style="font-size: medium;">+</span>
+              <div class="btn btn-small-key">S</div> any time you want to bring up this window ;)</label
+            >
+          </div>
+          <div id="keyboard-navigation-tip" class="row" style="display: none; padding-top: 12px;">
+            <div style="margin-top: 2px; margin-left: 12px; background-color: transparent">
+              <img src="../data/double_arrow_right" />
+            </div>
+            <label
+              class="col control-label text-justify"
+              style="font-size: 12px; font-weight: 500; padding-top: 0px; margin-left: -10px; padding-right: 19px;"
+            >
+              <b>Tip:</b> Press <div class="btn btn-small-key">Alt</div> once to enable <b>keyboard navigation</b>. Then simply press the
+              letter shown inside the brackets!</label
+            >
+          </div>
+          <div id="keyboard-navigation-ctrl-tip" class="row" style="display: none; padding-top: 12px;">
+            <div style="margin-top: 2px; margin-left: 12px; background-color: transparent">
+              <img src="../data/double_arrow_right" />
+            </div>
+            <label
+              class="col control-label text-justify"
+              style="font-size: 12px; font-weight: 500; padding-top: 0px; margin-left: -10px; padding-right: 19px;"
+            >
+              <b>Tip:</b> If is necessary on <b>keyboard navigation</b> you can also prepend <div class="btn btn-small-key">Ctrl</div>
+              <span style="font-size: medium;">+</span> <b>[*letter inside brackets*]</b> in order to avoid just typing the letter
+              instead!</label
+            >
+          </div>
+          <div id="realtime-preview-tip" class="row" style="display: none; padding-top: 12px;">
+            <div style="padding-top: 8px; margin-left: 15px; background-color: transparent">
+              <img src="../data/double_arrow_left" />
+            </div>
+            <span
+              class="col control-label text-justify"
+              style="font-size: 12px; font-weight: 500; padding-top: 0px; margin-left: -10px; padding-right: 19px;"
+              ><b>Pss..</b> You don't have to wait for the process to finish to take action. <b>Preview in <u>realtime</u></b> the collected
+              emails so far!</span
+            >
+          </div>
+          <div id="deep-search-info" class="row" style="display: none; padding-top: 12px;">
+            <div style="padding-top: 69px; margin-left: 15px; background-color: transparent">
+              <img src="../data/double_arrow_left" />
+            </div>
+            <label
+              class="col control-label text-justify"
+              style="font-size: 12px; font-weight: 500; padding-top: 5px; margin-left: -10px; padding-right: 19px;"
+              ><b>Deep Search</b> gives a second pass looking for more results per query (while excludes previous results as much as it's
+              allowed). <b>Get up to ~35% more emails in the end!</b></label
+            >
+          </div>
+          <div id="user-friendly-status" class="row" style="display: none; padding-top: 12px;">
+            <div style="padding-top: 10px; margin-left: -5px; background-color: transparent">
+              <img id="user-friendly-status-arrow" src="../data/arrow_left_green" />
+            </div>
+            <div class="col" style="padding-top: 12px; margin-left: -10px; background-color: transparent">
+              <label
+                id="user-friendly-status-text"
+                class="control-label text-success text-justify"
+                style="font-size: 13 px; font-weight: 500;"
+                >All done! You can download your full list now.</label
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="login-modal" class="modal fade">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Welcome to <span class="text-primary">Serpdigger</span></h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p class="text-center">
+              <span style="font-style: italic">Let's get started !</span> <br />
+              Enter your <b style="font-weight: 500">username</b> and <b style="font-weight: 500">password</b> below.
+            </p>
+            <form id="login-form" class="form-horizontal col">
+              <div class="form-group row justify-content-center">
+                <div class="col-sm-9">
+                  <input
+                    id="inputUsername"
+                    class="form-control"
+                    type="text"
+                    placeholder="Enter your username"
+                    spellcheck="false"
+                    style="text-align:center"
+                  />
+                </div>
+              </div>
+              <div class="form-group row justify-content-center">
+                <div class="col-sm-9">
+                  <input
+                    id="inputPassword"
+                    class="form-control"
+                    type="password"
+                    placeholder="Enter your password"
+                    spellcheck="false"
+                    style="text-align:center"
+                  />
+                </div>
+              </div>
+              <div class="form-group row justify-content-center">
+                <div class="col-sm-5">
+                  <div class="form-group row justify-content-center" style="margin-bottom: 2px;">
+                    <div>
+                      <input class="form-check-input" type="checkbox" value="" id="inputRememberMe" checked />
+                      <label class="form-check-label" for="inputRememberMe"> Remember me </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="form-group row justify-content-center">
+                <div class="col-sm-5">
+                  <button id="login" class="btn btn-light btn-md btn-block active">LOGIN</button>
+                </div>
+              </div>
+              <div id="incorrect-login" class="form-group row justify-content-center" style="display: none">
+                <span class="text-danger" style="font-weight: 450">Incorrect username and/or password</span>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="preview-modal" class="modal fade">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="height: 520px;">
+          <div class="modal-header">
+            <h5 class="modal-title" style="padding-left: 0%">Realtime <span class="text-primary">Preview</span></h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="loader" class="spinner-position">
+              <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div id="hidden-table-content" style="display: none; margin-top: -80px;">
+              <table
+                id="table"
+                data-height="456"
+                data-classes="table table-hover table-no-bordered table-condensed table-sm"
+                data-row-style="rowStyle"
+                data-click-to-select="true"
+                data-sort-stable="false"
+                data-search="true"
+                data-trim-on-search="false"
+                data-search-align="right"
+                data-search-time-out="100"
+                data-buttons-align="right"
+                data-striped="false"
+                data-show-export="false"
+                style="padding: 0px; margin: 0px; font-size: small; cursor: pointer;"
+              ></table>
+              <div id="table-footer" class="col">
+                <div class="row">
+                  <hr class="dashed-style" />
+                  <span class="col" style="padding: 0px; margin-top: 7px; font-size: 14.45px;">
+                    If you prefer you can also <b style="font-weight: 500">download</b> the collected emails so far at
+                    <b style="font-weight: 500">any</b> time<b style="font-weight: 500">!</b>
+                  </span>
+                  <div class="col-3" style="padding: 0px; font-size: 14px; font-weight: 400;">
+                    <span
+                      id="partial-download-badge"
+                      class="badge badge-primary"
+                      style="display: none; position: absolute; margin-top: -7px; right: 0;"
+                    ></span>
+                    <button id="partial-download" class="btn btn-outline-success btn-md btn-block expand-btn" style="width: 178px;"
+                      >PARTIAL DOWNLOAD</button
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script defer src="../includes/jquery/jquery.min.js"></script>
+    <script defer src="../includes/popper/popper.min.js"></script>
+    <script defer src="../includes/bootstrap/bootstrap.min.js"></script>
+    <script defer src="../includes/bootstrap-table/bootstrap-table.min.js"></script>
+    <script async src="../includes/js-xlsx/xlsx.core.min.js"></script>
+    <script defer src="../includes/logs.min.js"></script>
+    <script defer src="../includes/antd/index.min.js"></script>
+    <script defer src="../includes/offline/offline.min.js"></script>
+    <script defer src="../includes/bootbox/bootbox.min.js"></script>
+    <script defer src="../includes/hotkeys/hotkeys.min.js"></script>
+    <script defer src="popup.js"></script>
+    <script defer src="login.js"></script>
+    <script defer src="query.js"></script>
+    <script defer src="runner.js"></script>
+  </body>
+</html>
