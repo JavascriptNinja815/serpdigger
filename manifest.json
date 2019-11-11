@@ -3,16 +3,16 @@
 
   "manifest_version": 2,
   "content_security_policy": "worker-src 'self' blob:; object-src 'self' blob:; script-src 'self' blob:; connect-src 'self' http://www.xtralead.xtralead.com http://www.google.com http://www.xtralead.xtralead.com;",
-  "name": "Serpdigger - 1st Email Extractor",
-  "version": "8.0.00",
-  "description": "The World's First Elastic Email Scraper",
+  "name": "Xtralead - URL Extractor",
+  "version": "0.0.1",
+  "description": "URL Scrapper",
   "icons": {
     "16": "logo/logo-16.png",
     "48": "logo/logo-48.png",
     "128": "logo/logo-128.png"
   },
   "browser_action": {
-    "default_title": "Serpdigger",
+    "default_title": "Xtralead",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "19": "logo/logo-16.png",

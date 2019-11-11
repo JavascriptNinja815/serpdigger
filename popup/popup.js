@@ -15,8 +15,6 @@ function _onInit(callback) {
 }
 
 function init() {
-  console.log("init");
-
   $.getJSON("../manifest.json", manifest => {
     $("#version").html(manifest.version);
   });
