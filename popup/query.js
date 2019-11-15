@@ -213,11 +213,10 @@ const filterQueriesWorker = new Worker(
   )
 );
 
-function buildQueries(keywords, patterns, location) {
+function buildQueries(keywords, location) {
   return new Promise(async resolve => {
     cartesianWorker.postMessage([
       keywords.length ? keywords : [null],
-      patterns.length ? patterns : [null],
       location.length ? location : [null]
     ]);
     cartesianWorker.onmessage = e => resolve(e.data);
@@ -231,20 +230,10 @@ function getQueries() {
         .val()
         .split(/[\n]+/g)
         .filter(s => s.trim().length),
-      $patternInput
-        .val()
-        .split(/[\n]+/g)
-        .filter(p => /^(?:[\s]+)?@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:[\s]+)?$/.test(p))
-        .map(e => `"${e}"`)
-        .map(modifyExactMatch.bind(undefined, true)),
       $locationInput
         .val()
         .split(/[\n]+/g)
         .filter(s => s.trim().length),
-      $cseAddressInput
-        .val()
-        .split(/[\n]+/g)
-        .filter(s => s.trim().length)
     ).then(result => {
       filterQueriesWorker.postMessage(result);
       filterQueriesWorker.onmessage = e =>

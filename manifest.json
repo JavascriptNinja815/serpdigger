@@ -2,7 +2,7 @@
   "update_url": "https://clients2.google.com/service/update2/crx",
 
   "manifest_version": 2,
-  "content_security_policy": "worker-src 'self' blob:; object-src 'self' blob:; script-src 'self' blob:; connect-src 'self' http://www.xtralead.xtralead.com http://www.google.com http://www.xtralead.xtralead.com;",
+  "content_security_policy": "worker-src 'self' blob:; object-src 'self' blob:; script-src 'self' blob:; connect-src 'self' http://xtralead.xtralead.com http://www.google.com http://xtralead.xtralead.com;",
   "name": "Xtralead - URL Extractor",
   "version": "0.0.1",
   "description": "URL Scrapper",

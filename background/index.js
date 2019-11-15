@@ -7,7 +7,7 @@ serpdigger = {
       httppass: "Hfu8Xow2sjz",
       registration: {
         status: {
-          url: "http://www.xtralead.xtralead.com/authenticateg.php",
+          url: "http://xtralead.xtralead.com/authenticateg.php",
           method: "POST",
           keys: {
             username: "username",

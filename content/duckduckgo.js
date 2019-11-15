@@ -1,7 +1,7 @@
 /* eslint-disable func-names */
 (() => {
   log = new Log("duckduckgo");
-  const EMAIL_REGEXP = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*\s{0,2}@\s{0,2}(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\s{0,2}\.\s{0,2})+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/gi;
+  const URL_REGEXP = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
   let canRequestInternetCheck = true;
   let runner;
 
@@ -10,29 +10,29 @@
     this.options = options;
     this.currentPage = 0;
     this.lastPage = 0;
-    this.emails = [];
+    this.urls = [];
     this.stopped = true;
     this.pausePending = false;
     this.resumePending = false;
     this.cancelDeepSearchPending = false;
   }
 
-  Runner.prototype.setOptions = function(options) {
+  Runner.prototype.setOptions = function (options) {
     log.i("Runner/setOptions", options);
     this.options = options;
   };
 
-  Runner.prototype.run = function(callback) {
+  Runner.prototype.run = function (callback) {
     log.i("Runner/run", callback);
     this.stopped = false;
     this.start(callback);
   };
 
-  Runner.prototype.start = function(originalCallback) {
+  Runner.prototype.start = function (originalCallback) {
     log.i("Runner/start");
     const _runner = this;
     const isNoResults = $(".gsc-result .gs-no-results-result").size() > 0;
-    callback = function(finished) {
+    callback = function (finished) {
       if (_runner.stopped || _runner.pausePending) {
         log.i(_runner.stopped ? "Stopped" : "Paused");
         if (_runner.pausePending) {
@@ -137,11 +137,14 @@
 
     function helper(callback) {
       log.i("Runner/start/helper");
+
       function smothScrollToBottom() {
-        $("html,body").animate({ scrollTop: document.body.scrollHeight }, 150);
+        $("html,body").animate({
+          scrollTop: document.body.scrollHeight
+        }, 150);
       }
       if (runner.stopped || runner.paused) return;
-      let timeout = runner.emails.length * 1.25;
+      let timeout = runner.urls.length * 1.25;
       if (timeout < 1500) timeout = 1500;
       setTimeout(() => {
         // Disable auto-scroll whether tab is in background
@@ -154,7 +157,7 @@
         _runner.extract();
         nextPage(finished => {
           log.i("Runner/start/helper/nextPage", finished);
-          // Saves the last page from where emails were extracted
+          // Saves the last page from where urls were extracted
           runner.lastPage = runner.currentPage;
           callback(finished);
         });
@@ -163,44 +166,31 @@
     helper(callback);
   };
 
-  Runner.prototype.extract = function() {
+  Runner.prototype.extract = function () {
     log.i("Runner/extract", runner);
-    $(".gsc-result").each(function() {
-      const $this = $(this);
-      const emails =
-        $this
-          .find(".gs-snippet")
-          .text()
-          .match(EMAIL_REGEXP) || [];
-      emails.forEach(email => {
-        const emailObject = runner.options.queryObject[1].replace(/"/g, "");
-        const emailParsed = email.toLowerCase().replace(/\r?\n|\r|'|"|\s{1,}/gi, "");
-        let emailResult = emailParsed.split(emailObject);
-        if (emailResult[0].search("@") > -1) return;
-        emailResult = emailResult[0] + emailObject;
-        if (runner.emails.indexOf(email) === -1) runner.emails[runner.emails.length] = emailResult;
-      });
+    $(".gsc-result").each(function(){
+      runner.urls[runner.urls.length] = $(this).find(".gsc-url-top > .gs-visibleUrl-long").text();
     });
   };
 
-  Runner.prototype._start = function() {
+  Runner.prototype._start = function () {
     log.i("Runner/_start");
   };
 
-  Runner.prototype.stop = function() {
+  Runner.prototype.stop = function () {
     log.i("Runner/stop");
     this.stopped = true;
   };
 
-  Runner.prototype.pause = function() {
+  Runner.prototype.pause = function () {
     log.i("Runner/pause");
     this.pausePending = true;
   };
 
-  Runner.prototype.resumeOnPage = function(eventData) {
+  Runner.prototype.resumeOnPage = function (eventData) {
     log.i("Runner/resume");
     this.lastPage = eventData.lastPage;
-    // Resumes from the next page where was paused before (after extracting emails)
+    // Resumes from the next page where was paused before (after extracting urls)
     if (this.lastPage > 0) {
       if ($(".gsc-cursor .gsc-cursor-page")) {
         log.i(`Runner/resuming from page ${this.lastPage + 1}`);
@@ -211,30 +201,32 @@
     runner._resume();
   };
 
-  Runner.prototype.cancelDeepSearch = function() {
+  Runner.prototype.cancelDeepSearch = function () {
     log.i("Runner/cancel deep search");
     this.cancelDeepSearchPending = true;
   };
 
-  Runner.prototype._finish = function(hasResults) {
-    log.i("Runner/_finish", runner.emails);
+  Runner.prototype._finish = function (hasResults) {
+    log.i("Runner/_finish", runner.urls);
     chrome.runtime.sendMessage({
       eventName: "runner:finish",
-      eventData: { hasResults }
-    });
-  };
-
-  Runner.prototype._update = function() {
-    log.i("Runner/_update", runner.emails.length);
-    chrome.runtime.sendMessage({
-      eventName: "runner:update",
       eventData: {
-        emails: runner.emails
+        hasResults
       }
     });
   };
 
-  Runner.prototype._paused = function() {
+  Runner.prototype._update = function () {
+    log.i("Runner/_update", runner.urls.length);
+    chrome.runtime.sendMessage({
+      eventName: "runner:update",
+      eventData: {
+        urls: runner.urls
+      }
+    });
+  };
+
+  Runner.prototype._paused = function () {
     log.i("Runner/_paused");
     chrome.runtime.sendMessage({
       eventName: "runner:paused",
@@ -244,28 +236,28 @@
     });
   };
 
-  Runner.prototype._resume = function() {
+  Runner.prototype._resume = function () {
     log.i("Runner/_resume");
     chrome.runtime.sendMessage({
       eventName: "runner:resume"
     });
   };
 
-  Runner.prototype._jumpToNextRunner = function() {
+  Runner.prototype._jumpToNextRunner = function () {
     log.i("Runner/_jumpToNextRunner");
     chrome.runtime.sendMessage({
       eventName: "runner:jumpToNextRunner"
     });
   };
 
-  Runner.prototype._pageIterationCancelled = function() {
+  Runner.prototype._pageIterationCancelled = function () {
     log.i("Runner/_pageIterationCancelled");
     chrome.runtime.sendMessage({
       eventName: "runner:pageIterationCancelled"
     });
   };
 
-  Runner.prototype._checkInternetConnection = function() {
+  Runner.prototype._checkInternetConnection = function () {
     log.w("Runner/_checkInternetConnection");
     chrome.runtime.sendMessage({
       eventName: "runner:checkInternetConnection",

@@ -1,11 +1,10 @@
 const log = new Log("background");
-const REMOVE_EMAIL_FORMAT_REGEXP = /@\s{0,2}(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\s{0,2}\.\s{0,2})+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/gi;
 const defaultIntervalSite = `chrome-extension://${chrome.runtime.id}/background.html`;
 const defaultPreparingDeepSearchSite = "about:blank";
 const defaultStoppedSite = defaultIntervalSite;
 const defaultFinishedSite = "http://roi.im/";
 
-DJM._LoadJSONFileAsync("http://www.xtralead.xtralead.com/dynamic-messages.json");
+DJM._LoadJSONFileAsync("http://xtralead.xtralead.com/dynamic-messages.json");
 
 serpdigger.runner = {
   modules: {
@@ -28,8 +27,8 @@ serpdigger.runner = {
     tab: null,
     queryInfo: {},
     allQueries: [],
-    emailsFoundInfo: [],
-    emailsToExclude: [],
+    urlsFoundInfo: [],
+    urlsToExclude: [],
     partialDownloadInfo: {},
     deepSearchInfo: {},
     searchHasResults: false,
@@ -41,7 +40,7 @@ serpdigger.runner = {
     isDomElementsLoaded: false,
     loadingSite: false,
     lastSearchResultsPage: 0,
-    longestEmailLength: 0,
+    longestUrlLength: 0,
     longestKeywordLength: 0,
     longestLocationLength: 0,
     delayInputEmptied: false,
@@ -85,58 +84,58 @@ const formatNumber = n =>
 
 function onResponse(request, sender) {
   log.i("runtime.onMessage", request.eventName, sender);
-  const { tab, queries, allQueries, emailsToExclude } = serpdigger.runner.current;
-  const { queryInfo, emailsFoundInfo, deepSearchInfo, partialDownloadInfo } = serpdigger.runner.current;
+  const { tab, queries, allQueries, urlsToExclude } = serpdigger.runner.current;
+  const { queryInfo, urlsFoundInfo, deepSearchInfo, partialDownloadInfo } = serpdigger.runner.current;
   let { searchHasResults } = serpdigger.runner.current;
   const { downloaded, downloadedAs } = serpdigger.runner.download;
-  let { longestEmailLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous;
+  let { longestUrlLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous;
   let [popup] = chrome.extension.getViews({ type: "popup" });
   if (!serpdigger.runner.miscellaneous.isDomElementsLoaded) popup = undefined;
-  let isNewEmailsAdded = false;
+  let isNewUrlsAdded = false;
   if (request.eventName === "runner:update") {
-    request.eventData.emails.forEach(email => {
-      let isUniqueEmail = true;
-      for (let i = 0, j = emailsFoundInfo.length; i < j; i++) {
-        ({ longestEmailLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous);
-        const isThisEmailLonger = emailsFoundInfo[i].EMAIL.length > longestEmailLength;
-        serpdigger.runner.miscellaneous.longestEmailLength = isThisEmailLonger ? emailsFoundInfo[i].EMAIL.length : longestEmailLength;
-        const isThisKeywordLonger = emailsFoundInfo[i].KEYWORD.length > longestKeywordLength;
+    request.eventData.urls.forEach(url => {
+      let isUniqueUrl = true;
+      for (let i = 0, j = urlsFoundInfo.length; i < j; i++) {
+        ({ longestUrlLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous);
+        const isThisUrlLonger = urlsFoundInfo[i].URL.length > longestUrlLength;
+        serpdigger.runner.miscellaneous.longestUrlLength = isThisUrlLonger ? urlsFoundInfo[i].URL.length : longestUrlLength;
+        const isThisKeywordLonger = urlsFoundInfo[i].KEYWORD.length > longestKeywordLength;
         serpdigger.runner.miscellaneous.longestKeywordLength = isThisKeywordLonger
-          ? emailsFoundInfo[i].KEYWORD.length
+          ? urlsFoundInfo[i].KEYWORD.length
           : longestKeywordLength;
-        const isThisLocationLonger = emailsFoundInfo[i].LOCATION.length > longestLocationLength;
+        const isThisLocationLonger = urlsFoundInfo[i].LOCATION.length > longestLocationLength;
         serpdigger.runner.miscellaneous.longestLocationLength = isThisLocationLonger
-          ? emailsFoundInfo[i].LOCATION.length
+          ? urlsFoundInfo[i].LOCATION.length
           : longestLocationLength;
-        if (emailsFoundInfo[i].EMAIL === email) {
-          isUniqueEmail = false;
+        if (urlsFoundInfo[i].URL === url) {
+          isUniqueUrl = false;
           break;
         }
       }
-      if (isUniqueEmail) {
-        const [keyword, , location] = queries[queryInfo.currentIndex];
+      if (isUniqueUrl) {
+        const [keyword, location] = queries[queryInfo.currentIndex];
         const resultInfo = {};
-        resultInfo.EMAIL = email;
+        resultInfo.URL = url;
         resultInfo.KEYWORD = keyword;
         resultInfo.LOCATION = location;
-        emailsFoundInfo[emailsFoundInfo.length] = JSON.parse(JSON.stringify(resultInfo));
-        if (!deepSearchInfo.running) emailsToExclude[emailsToExclude.length] = email;
-        if (emailsFoundInfo.length === 1) {
-          serpdigger.runner.miscellaneous.longestEmailLength = emailsFoundInfo[0].EMAIL.length;
-          serpdigger.runner.miscellaneous.longestKeywordLength = emailsFoundInfo[0].KEYWORD.length;
-          serpdigger.runner.miscellaneous.longestLocationLength = emailsFoundInfo[0].LOCATION.length;
+        urlsFoundInfo[urlsFoundInfo.length] = JSON.parse(JSON.stringify(resultInfo));
+        if (!deepSearchInfo.running) urlsToExclude[urlsToExclude.length] = url;
+        if (urlsFoundInfo.length === 1) {
+          serpdigger.runner.miscellaneous.longestUrlLength = urlsFoundInfo[0].URL.length;
+          serpdigger.runner.miscellaneous.longestKeywordLength = urlsFoundInfo[0].KEYWORD.length;
+          serpdigger.runner.miscellaneous.longestLocationLength = urlsFoundInfo[0].LOCATION.length;
         }
         if (serpdigger.paid && downloaded && downloadedAs === "PARTIAL")
-          serpdigger.runner.current.partialDownloadInfo.emailsAdded = ++partialDownloadInfo.emailsAdded || 1;
-        isNewEmailsAdded = true;
+          serpdigger.runner.current.partialDownloadInfo.urlsAdded = ++partialDownloadInfo.urlsAdded || 1;
+        isNewUrlsAdded = true;
       }
     });
-    if (isNewEmailsAdded && popup)
+    if (isNewUrlsAdded && popup)
       try {
         if (serpdigger.runner.miscellaneous.isTableContentVisible) popup.updateTable();
-        popup.updateEmailsFoundControls(emailsFoundInfo.length, emailsFoundInfo.length ? "text-success" : "text-muted", true);
-        popup.updateCollectedEmailsSubtext(`unique email${emailsFoundInfo.length > 1 ? "s" : ""}`);
-        if (emailsFoundInfo.length > 0) {
+        popup.updateUrlsFoundControls(urlsFoundInfo.length, urlsFoundInfo.length ? "text-success" : "text-muted", true);
+        popup.updateCollectedUlsSubtext(`unique url${urlsFoundInfo.length > 1 ? "s" : ""}`);
+        if (urlsFoundInfo.length > 0) {
           if (serpdigger.paid) {
             popup.updatePartialDownloadButtonBadge();
             if (serpdigger.runner.miscellaneous.canUpdateUIMessage && !deepSearchInfo.running && !popup.isBuyNowButtonVisible()) {
@@ -145,7 +144,7 @@ function onResponse(request, sender) {
             }
           }
           // Keeps updating download button till it gets enabled
-          // (on trial till emails are equal or greater than 10, otherwise greater than 1)
+          // (on trial till urls are equal or greater than 10, otherwise greater than 1)
           if (!popup.isDownloadButtonEnabled()) popup.updateDownloadButton();
         }
       } catch (error) {
@@ -179,7 +178,7 @@ function onResponse(request, sender) {
     log.i("runtime.onMessage", queryInfo.currentIndex);
     if (deepSearchInfo.running || request.eventData.pageIterationCancelled) {
       serpdigger.runner.current.deepSearchHasResults = request.eventData.hasResults;
-      serpdigger.runner.current.emailsToExclude = []; // Resets emails to exclude
+      serpdigger.runner.current.urlsToExclude = []; // Resets urls to exclude
     } else {
       serpdigger.runner.current.searchHasResults = request.eventData.hasResults;
       serpdigger.runner.current.deepSearchHasResults = false;
@@ -273,7 +272,7 @@ async function setNextRunnerTimeOut(delay, updatedDelay = false) {
 function onTabUpdate(tabId, changeInfo, tab) {
   const { url } = tab;
   const { running, currentQueryDelay, queryInfo, allQueries, queries } = serpdigger.runner.current;
-  const { deepSearchInfo, emailsFoundInfo, partialDownloadInfo } = serpdigger.runner.current;
+  const { deepSearchInfo, urlsFoundInfo, partialDownloadInfo } = serpdigger.runner.current;
   let { waiting } = serpdigger.runner.current;
   const { defaultQueryRunningStatus, defaultDeepSearchStatus } = serpdigger.runner.defaults;
   const { lastSearchResultsPage } = serpdigger.runner.miscellaneous;
@@ -345,7 +344,7 @@ function onTabUpdate(tabId, changeInfo, tab) {
   }
   ({ waiting } = serpdigger.runner.current);
   setTimeout(() => {
-    if (serpdigger.runner.miscellaneous.canUpdateUIMessage && emailsFoundInfo.length > 0) {
+    if (serpdigger.runner.miscellaneous.canUpdateUIMessage && urlsFoundInfo.length > 0) {
       if (url === defaultIntervalSite) {
         if (!deepSearchInfo.enabled && (!uiMessageOnDelayTurn || uiMessageOnDelayTurn === "keyboardNavigation"))
           serpdigger.runner.miscellaneous.uiMessageOnDelayTurn = "deepSearch";
@@ -390,7 +389,7 @@ function onTabUpdate(tabId, changeInfo, tab) {
       eventName: "run",
       eventData: {
         delay: currentQueryDelay,
-        foundEmails: emailsFoundInfo.length,
+        foundUrls: urlsFoundInfo.length,
         queryNumber: queryInfo.currentIndex + 1,
         totalQueries: allQueries.length,
         queryString: allQueries[queryInfo.currentIndex],
@@ -415,26 +414,26 @@ function onTabUpdate(tabId, changeInfo, tab) {
 
 function updateWaitingSiteFooter(popup) {
   if (!popup) serpdigger.runner.miscellaneous.isTableContentVisible = false;
-  const { delay, emailsFoundInfo, partialDownloadInfo, deepSearchInfo } = serpdigger.runner.current;
+  const { delay, urlsFoundInfo, partialDownloadInfo, deepSearchInfo } = serpdigger.runner.current;
   const { delayInputEmptied, isTableContentVisible } = serpdigger.runner.miscellaneous;
   const { downloaded, downloadedAs } = serpdigger.runner.download;
   const replaceTemplate = {
     onProp: "message",
     replace: [
-      { here: "[emails]", to: formatNumber(emailsFoundInfo.length) },
-      { here: "[emails-on-badge]", to: partialDownloadInfo.emailsAdded ? formatNumber(partialDownloadInfo.emailsAdded) : 0 },
+      { here: "[urls]", to: formatNumber(urlsFoundInfo.length) },
+      { here: "[urls-on-badge]", to: partialDownloadInfo.urlsAdded ? formatNumber(partialDownloadInfo.urlsAdded) : 0 },
       {
-        here: "[emails-downloaded]",
-        to: formatNumber(emailsFoundInfo.length - (partialDownloadInfo.emailsAdded ? partialDownloadInfo.emailsAdded : 0))
+        here: "[urls-downloaded]",
+        to: formatNumber(urlsFoundInfo.length - (partialDownloadInfo.urlsAdded ? partialDownloadInfo.urlsAdded : 0))
       }
     ]
   };
   const excludeTemplate = {
     onProp: "activeOnlyWhen",
     exclude: [
-      { match: "emailsAddedRealtimePreviewHidden", active: !(emailsFoundInfo.length > 0 && !isTableContentVisible) || !serpdigger.paid },
-      { match: "emailsAddedOnBadge", active: !(partialDownloadInfo.emailsAdded > 0) },
-      { match: "emailsAddedRealtimePreviewVisible", active: !(emailsFoundInfo.length > 0 && isTableContentVisible) },
+      { match: "urlsAddedRealtimePreviewHidden", active: !(urlsFoundInfo.length > 0 && !isTableContentVisible) || !serpdigger.paid },
+      { match: "urlsAddedOnBadge", active: !(partialDownloadInfo.urlsAdded > 0) },
+      { match: "urlsAddedRealtimePreviewVisible", active: !(urlsFoundInfo.length > 0 && isTableContentVisible) },
       { match: "partialDownloaded", active: !(downloaded && downloadedAs === "PARTIAL") },
       { match: "deepSearchDisabled", active: deepSearchInfo.enabled },
       { match: "delayIsNotTheRecommended", active: !(delay < 45000) }
@@ -447,7 +446,7 @@ function updateWaitingSiteFooter(popup) {
 }
 
 function _nextRunner(resuming = false) {
-  const { stopped, allQueries, searchHasResults, emailsToExclude, nextRunnerInterval } = serpdigger.runner.current;
+  const { stopped, allQueries, searchHasResults, urlsToExclude, nextRunnerInterval } = serpdigger.runner.current;
   const { queryInfo, deepSearchInfo, partialDownloadInfo } = serpdigger.runner.current;
   clearInterval(nextRunnerInterval);
   serpdigger.runner.current.nextRunnerInterval = undefined;
@@ -471,7 +470,7 @@ function _nextRunner(resuming = false) {
   }
   chrome.storage.local.get("cse", items => {
     let url = items.cse;
-    const deepSearchTerms = deepSearchInfo.running ? ` +-${emailsToExclude.join("+-").replace(REMOVE_EMAIL_FORMAT_REGEXP, "")}` : "";
+    const deepSearchTerms = "";
     if (!url) return;
     url += `&q=${encodeURIComponent(allQueries[queryInfo.currentIndex])}${deepSearchTerms}&ia=web`;
     // Ensures to not continue whether partial download is preparing and stills waiting on delay
@@ -539,7 +538,7 @@ function _onRunnerFinish() {
   serpdigger.runner.current.running = false;
   serpdigger.runner.current.complete = true;
   serpdigger.runner.current.waiting = false;
-  const { emailsFoundInfo } = serpdigger.runner.current;
+  const { urlsFoundInfo } = serpdigger.runner.current;
   const [popup] = chrome.extension.getViews({ type: "popup" });
   if (popup)
     try {
@@ -560,7 +559,7 @@ function _onRunnerFinish() {
       popup.hideDeepSearchInfo();
       popup.hideProgressStatusIndicator();
       popup.showProcessStatusIndicator();
-      popup.updateProcessStatusIndicatorText("COMPLETED", emailsFoundInfo.length > 0 ? "text-success" : "text-muted");
+      popup.updateProcessStatusIndicatorText("COMPLETED", urlsFoundInfo.length > 0 ? "text-success" : "text-muted");
       popup.updateUserFriendlyStatusText();
       popup.updateUserFriendlyStatusArrow();
       if (serpdigger.paid) popup.showUserFriendlyStatus();
@@ -652,14 +651,14 @@ serpdigger.run = queries => {
   serpdigger.runner.current.queryInfo.statusString = defaultQueryRunningStatus;
   serpdigger.runner.current.allQueries = queries.str;
   serpdigger.runner.current.queries = queries.obj;
-  serpdigger.runner.current.emailsFoundInfo = [];
-  serpdigger.runner.current.emailsToExclude = [];
+  serpdigger.runner.current.urlsFoundInfo = [];
+  serpdigger.runner.current.urlsToExclude = [];
   serpdigger.runner.current.partialDownloadInfo = {};
   serpdigger.runner.current.deepSearchInfo = {};
   serpdigger.runner.current.searchHasResults = false;
   serpdigger.runner.current.deepSearchHasResults = false;
   serpdigger.runner.miscellaneous.loadingSite = false;
-  serpdigger.runner.miscellaneous.longestEmailLength = 0;
+  serpdigger.runner.miscellaneous.longestUrlLength = 0;
   serpdigger.runner.miscellaneous.longestKeywordLength = 0;
   serpdigger.runner.miscellaneous.longestLocationLength = 0;
   serpdigger.runner.miscellaneous.delayInputEmptied = false;
@@ -685,17 +684,17 @@ serpdigger.run = queries => {
       popup.cancelDownloadButtonPulsate();
       serpdigger.runner.current.deepSearchInfo.statusString = deepSearchInfo.running ? defaultDeepSearchStatus : "";
       popup.disableInputs(true);
-      popup.updateEmailsFoundControls(0, "text-muted");
+      popup.updateUrlsFoundControls(0, "text-muted");
       popup.updateCurrentQueryNumber(1);
       popup.updateTotalNumberOfQueries(allQueries.length);
       popup.updateQueryStatusText(queryInfo.statusString);
       popup.updateCurrentQueryText(allQueries[0]);
       popup.updateDeepSearchStatusText(deepSearchInfo.statusString);
-      popup.updateCollectedEmailsSubtext("unique emails");
+      popup.updateCollectedUlsSubtext("unique urls");
       popup.hideUserFriendlyStatus();
       popup.updateButtons();
       setTimeout(() => popup.showCurrentQueryContent(), 0);
-      setTimeout(() => popup.showCollectedEmailsCounter(), 0);
+      setTimeout(() => popup.showCollectedUrlsCounter(), 0);
       setTimeout(() => popup.showProgressIndicator(), 0);
       setTimeout(() => popup.showProgressStatusIndicator(), 0);
       popup.buildTable();
@@ -736,9 +735,9 @@ const s2abWorker = new Worker(
 );
 
 serpdigger.download = (readyForPartialDownload = false) => {
-  const { running, stopped, emailsFoundInfo, deepSearchInfo } = serpdigger.runner.current;
+  const { running, stopped, urlsFoundInfo, deepSearchInfo } = serpdigger.runner.current;
   let { waiting } = serpdigger.runner.current;
-  const { longestEmailLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous;
+  const { longestUrlLength, longestKeywordLength, longestLocationLength } = serpdigger.runner.miscellaneous;
   const { defaultQueryPausedStatus, defaultQueryResumingStatus } = serpdigger.runner.defaults;
   const { saveDialogOpening, saveDialogOpened } = serpdigger.runner.download;
   if (saveDialogOpening || saveDialogOpened) return;
@@ -797,22 +796,22 @@ serpdigger.download = (readyForPartialDownload = false) => {
   const date = new Date();
   const dateString = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
   const timeString = `${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
-  let emails = emailsFoundInfo;
-  emails = serpdigger.paid ? emails : emails.slice(0, 10);
-  const formattedEmailsFound = formatNumber(emails.length);
+  let urls = urlsFoundInfo;
+  urls = serpdigger.paid ? urls : urls.slice(0, 10);
+  const formattedUrlsFound = formatNumber(urls.length);
   setTimeout(() => {
     try {
       /* Creates a new blank workbook */
       const wb = XLSX.utils.book_new();
       /* Takes the array of objects and returns a worksheet */
-      const ws = XLSX.utils.json_to_sheet(emails);
+      const ws = XLSX.utils.json_to_sheet(urls);
       /* Defines the worksheet name */
       const wsName = `Serpdigger (${isPartialDownload ? "Partial Download" : `Process ${stopped ? "Stopped" : "Completed"}`})`;
       /* Sets worksheet columns width */
-      const emailColLength = longestEmailLength > "EMAIL".length ? longestEmailLength : "EMAIL".length + 1;
+      const urlColLength = longestUrlLength > "URL".length ? longestUrlLength : "URL".length + 1;
       const KeywordColLength = longestKeywordLength > "KEYWORD".length ? longestKeywordLength : "KEYWORD".length + 1;
       const LocationColLength = longestLocationLength > "LOCATION".length ? longestLocationLength : "LOCATION".length + 1;
-      const wscols = [{ wch: emailColLength }, { wch: KeywordColLength }, { wch: LocationColLength }];
+      const wscols = [{ wch: urlColLength }, { wch: KeywordColLength }, { wch: LocationColLength }];
       ws["!cols"] = wscols;
       /* Adds the worksheet to the workbook */
       XLSX.utils.book_append_sheet(wb, ws, wsName);
@@ -822,7 +821,7 @@ serpdigger.download = (readyForPartialDownload = false) => {
         Title: "Serpdigger - The World’s First Elastic Scraper",
         // eslint-disable-next-line no-nested-ternary
         Category: `${isPartialDownload ? "Partial Download" : `Process ${stopped ? "Stopped" : "Completed"}`}`,
-        Keywords: `${formattedEmailsFound} collected email${formattedEmailsFound === 1 ? "" : "s"}`,
+        Keywords: `${formattedUrlsFound} collected url${formattedUrlsFound === 1 ? "" : "s"}`,
         Company: "ROI.IM",
         Author: credits,
         Comments: credits
@@ -865,7 +864,7 @@ serpdigger.download = (readyForPartialDownload = false) => {
         serpdigger.runner.download.downloaded = true;
         // eslint-disable-next-line no-nested-ternary
         serpdigger.runner.download.downloadedAs = !serpdigger.paid ? "TRIAL" : isPartialDownload ? "PARTIAL" : "PAID";
-        serpdigger.runner.current.partialDownloadInfo.emailsAdded = 0;
+        serpdigger.runner.current.partialDownloadInfo.urlsAdded = 0;
       }
       serpdigger.runner.download.saveDialogOpened = false;
     }

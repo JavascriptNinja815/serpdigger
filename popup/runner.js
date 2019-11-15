@@ -5,7 +5,6 @@ setTimeout(() => {
   $loginModal = $("#login-modal");
   $cseAddressInput = $("#cse-address-input");
   $keywordInput = $("#keyword-input");
-  $patternInput = $("#pattern-input");
   $locationInput = $("#location-input");
   $delayInput = $("#delay-input");
   $queryStatusText = $("#query-status-text");
@@ -14,9 +13,9 @@ setTimeout(() => {
   $progressIndicator = $("#progress-indicator");
   $currentQuery = $("#current-query");
   $currentQueryText = $("#current-query-text");
-  $collectedEmails = $("#collected-emails");
-  $collectedEmailsSubtext = $("#collected-emails-subtext");
-  $collectedEmailsCounter = $("#collected-emails-counter");
+  $collectedUrls = $("#collected-urls");
+  $collectedUrlsSubtext = $("#collected-urls-subtext");
+  $collectedUrlsCounter = $("#collected-urls-counter");
   $runnerStatusQuery = $("#runner-status-query");
   $progressRunning = $("#progress-running");
   $runnerStatusIndicator = $("#runner-status-indicator");
@@ -107,45 +106,45 @@ function debounce(callback, waitTime) {
 function showCompletedStats(isToggleKeyboardNavigation = false) {
   // Shows the final status everytime popup is shown till the user download the results
   const { paid } = backgroundPage.serpdigger;
-  const { complete, stopped, emailsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
+  const { complete, stopped, urlsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
   const { downloaded, downloadedAs } = backgroundPage.serpdigger.runner.download;
   const { saveDialogOpened } = backgroundPage.serpdigger.runner.download;
-  // Completed Stats will be shown whether the process was completed or stopped and emails hasn't been downloaded as complete yet
-  // or whether emails were downloaded as Trial (10 emails) and user is logged now (allowing to download the full list)
-  const canDownloadFullListNow = downloaded && paid && downloadedAs === "TRIAL" && emailsFoundInfo.length > 10;
-  const noNewEmailsSinceLastPartialDownload = downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.emailsAdded === 0;
-  if (((stopped && emailsFoundInfo.length > 0) || complete) && (!downloaded || downloadedAs === "PARTIAL" || canDownloadFullListNow)) {
+  // Completed Stats will be shown whether the process was completed or stopped and urls hasn't been downloaded as complete yet
+  // or whether urls were downloaded as Trial (10 urls) and user is logged now (allowing to download the full list)
+  const canDownloadFullListNow = downloaded && paid && downloadedAs === "TRIAL" && urlsFoundInfo.length > 10;
+  const noNewUrlsSinceLastPartialDownload = downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.urlsAdded === 0;
+  if (((stopped && urlsFoundInfo.length > 0) || complete) && (!downloaded || downloadedAs === "PARTIAL" || canDownloadFullListNow)) {
     if (!isToggleKeyboardNavigation) {
       $previewDownload.attr("disabled", false);
       $previewDownload
         .removeClass()
-        .addClass(`btn btn-lg btn-block btn-success ${!noNewEmailsSinceLastPartialDownload ? "pulsate-fwd" : ""}`);
+        .addClass(`btn btn-lg btn-block btn-success ${!noNewUrlsSinceLastPartialDownload ? "pulsate-fwd" : ""}`);
     }
     if (!paid) {
       updateDownloadButtonText(
         `${helper.keyboardNavigationEnabled ? "[D]" : "D"}${
-          emailsFoundInfo.length < 10 ? "OWNLOAD" : `OWNLOAD ${helper.keyboardNavigationEnabled ? "1ST" : "FIRST"} 10`
+          urlsFoundInfo.length < 10 ? "OWNLOAD" : `OWNLOAD ${helper.keyboardNavigationEnabled ? "1ST" : "FIRST"} 10`
         }`
       );
     } else if (downloaded && downloadedAs === "TRIAL") updateDownloadButtonText(`${helper.keyboardNavigationEnabled ? "[D]" : "D"}OWNLOAD`);
-    else if (noNewEmailsSinceLastPartialDownload)
+    else if (noNewUrlsSinceLastPartialDownload)
       updateDownloadButtonText(`${helper.keyboardNavigationEnabled ? "[D]" : "D"}OWNLOAD AGAIN`);
-    else if (!isToggleKeyboardNavigation && emailsFoundInfo.length > 0 && !saveDialogOpened) addDownloadButtonPulsate();
+    else if (!isToggleKeyboardNavigation && urlsFoundInfo.length > 0 && !saveDialogOpened) addDownloadButtonPulsate();
     if (isToggleKeyboardNavigation) return;
     if (stopped) {
       updateProcessStatusIndicatorText("STOPPED", "text-danger");
       updateUserFriendlyStatusText(false);
     } else if (complete) {
-      updateProcessStatusIndicatorText("COMPLETE", emailsFoundInfo.length > 0 ? "text-success" : "text-muted");
+      updateProcessStatusIndicatorText("COMPLETE", urlsFoundInfo.length > 0 ? "text-success" : "text-muted");
       updateUserFriendlyStatusText();
-      updateEmailsFoundControls(emailsFoundInfo.length, emailsFoundInfo.length > 0 ? "text-success" : "text-muted", true);
+      updateUrlsFoundControls(urlsFoundInfo.length, urlsFoundInfo.length > 0 ? "text-success" : "text-muted", true);
     }
     updateUserFriendlyStatusArrow();
     showProcessStatusIndicator();
-    showCollectedEmailsCounter();
+    showCollectedUrlsCounter();
     if (paid) showUserFriendlyStatus();
     else showBuyNowButton();
-  } else if ((stopped || complete) && downloaded && emailsFoundInfo.length > 0) {
+  } else if ((stopped || complete) && downloaded && urlsFoundInfo.length > 0) {
     if (!isToggleKeyboardNavigation) {
       $previewDownload.attr("disabled", false);
       $previewDownload.removeClass().addClass("btn btn-lg btn-block btn-outline-success");
@@ -158,12 +157,10 @@ async function disableInputs(
   v,
   cseAddressInput = $cseAddressInput,
   keywordInput = $keywordInput,
-  patternInput = $patternInput,
   locationInput = $locationInput
 ) {
   cseAddressInput.attr("disabled", v);
   keywordInput.attr("disabled", v);
-  patternInput.attr("disabled", v);
   locationInput.attr("disabled", v);
 }
 
@@ -242,30 +239,30 @@ async function counter(control, countFrom, countTo, animated = false) {
   }
 }
 
-async function updateEmailsFoundControls(
+async function updateUrlsFoundControls(
   countTo,
   addClass,
   animated = false,
-  collectedEmails = $collectedEmails,
-  collectedEmailsSubtext = $collectedEmailsSubtext
+  collectedUrls = $collectedUrls,
+  collectedUrlsSubtext = $collectedUrlsSubtext
 ) {
   helper.previousCountTo = helper.previousCountTo || 0;
-  counter(collectedEmails, helper.previousCountTo, countTo, animated);
-  collectedEmails.removeClass("text-muted text-success").addClass(addClass);
-  collectedEmailsSubtext.removeClass("text-muted text-success").addClass(addClass);
+  counter(collectedUrls, helper.previousCountTo, countTo, animated);
+  collectedUrls.removeClass("text-muted text-success").addClass(addClass);
+  collectedUrlsSubtext.removeClass("text-muted text-success").addClass(addClass);
   helper.previousCountTo = countTo;
 }
 
-function showCollectedEmailsCounter(collectedEmailsCounter = $collectedEmailsCounter) {
-  collectedEmailsCounter.show();
+function showCollectedUrlsCounter(collectedUrlsCounter = $collectedUrlsCounter) {
+  collectedUrlsCounter.show();
 }
 
-function hideCollectedEmailsCounter() {
-  $collectedEmailsCounter.hide();
+function hideCollectedUrlsCounter() {
+  $collectedUrlsCounter.hide();
 }
 
-async function updateCollectedEmailsSubtext(s, collectedEmailsSubtext = $collectedEmailsSubtext) {
-  collectedEmailsSubtext.text(s);
+async function updateCollectedUrlsSubtext(s, collectedUrlsSubtext = $collectedUrlsSubtext) {
+  collectedUrlsSubtext.text(s);
 }
 
 async function updateCurrentQueryNumber(n, currentQuery = $currentQuery) {
@@ -437,25 +434,25 @@ function hideUserFriendlyStatus() {
 
 async function updateUserFriendlyStatusText(complete = true) {
   let friendlyStatusText = "";
-  const { emailsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
+  const { urlsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
   const { downloaded, downloadedAs } = backgroundPage.serpdigger.runner.download;
-  const textClass = emailsFoundInfo.length > 0 ? "text-success" : "text-danger";
-  if (downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.emailsAdded === 0)
-    friendlyStatusText = "There're no new emails since last partial download";
-  else if (emailsFoundInfo.length > 1)
-    friendlyStatusText = complete ? "All done! Your full list is now ready for download ;)" : "Nice! You got some emails.";
-  else if (emailsFoundInfo.length === 1)
+  const textClass = urlsFoundInfo.length > 0 ? "text-success" : "text-danger";
+  if (downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.urlsAdded === 0)
+    friendlyStatusText = "There're no new urls since last partial download";
+  else if (urlsFoundInfo.length > 1)
+    friendlyStatusText = complete ? "All done! Your full list is now ready for download ;)" : "Nice! You got some urls.";
+  else if (urlsFoundInfo.length === 1)
     friendlyStatusText = complete
-      ? "You got one email only. You can try again with more queries."
-      : "Nice! You got some emails. (Just one to be honest)";
-  else friendlyStatusText = `No emails found :(${complete ? " Maybe you should click on the help button above." : ""}`;
+      ? "You got one url only. You can try again with more queries."
+      : "Nice! You got some urls. (Just one to be honest)";
+  else friendlyStatusText = `No urls found :(${complete ? " Maybe you should click on the help button above." : ""}`;
   $userFriendlyStatusText.text(friendlyStatusText);
   $userFriendlyStatusText.removeClass("text-muted text-success text-danger").addClass(textClass);
 }
 
 async function updateUserFriendlyStatusArrow() {
-  const { emailsFoundInfo } = backgroundPage.serpdigger.runner.current;
-  $userFriendlyStatusArrow.attr("src", emailsFoundInfo.length > 0 ? "../data/arrow_left_green" : "../data/arrow_left_red");
+  const { urlsFoundInfo } = backgroundPage.serpdigger.runner.current;
+  $userFriendlyStatusArrow.attr("src", urlsFoundInfo.length > 0 ? "../data/arrow_left_green" : "../data/arrow_left_red");
 }
 
 async function updateTotalNumberOfQueries(n, totalQueries = $totalQueries) {
@@ -546,12 +543,12 @@ function updateTrialContentFromLogin() {
 }
 
 function updatePaidContentFromLogin() {
-  const { complete, stopped, running, emailsFoundInfo } = backgroundPage.serpdigger.runner.current;
+  const { complete, stopped, running, urlsFoundInfo } = backgroundPage.serpdigger.runner.current;
   // Disable download button during account checking
   updateDownloadButton();
   if (isBuyNowButtonVisible()) {
     hideBuyNowButton();
-    if (running && emailsFoundInfo.length > 0) showRealtimePreviewTip();
+    if (running && urlsFoundInfo.length > 0) showRealtimePreviewTip();
     else if (complete || stopped) showUserFriendlyStatus();
   }
   $toggle.attr("disabled", false);
@@ -563,10 +560,10 @@ function updatePaidContentFromLogin() {
 
 async function updatePartialDownloadButtonBadge() {
   const { complete, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
-  const { emailsAdded } = partialDownloadInfo;
-  if (!emailsAdded || emailsAdded === 0 || complete || partialDownloadInfo.preparing) hidePartialDownloadBadge();
+  const { urlsAdded } = partialDownloadInfo;
+  if (!urlsAdded || urlsAdded === 0 || complete || partialDownloadInfo.preparing) hidePartialDownloadBadge();
   else {
-    $partialDownloadBadge.text(emailsAdded > 999 ? "+999" : emailsAdded);
+    $partialDownloadBadge.text(urlsAdded > 999 ? "+999" : urlsAdded);
     if (!$partialDownload.is(":hover")) showPartialDownloadBadge();
   }
 }
@@ -593,7 +590,7 @@ function updateDownloadButton(previewDownload = $previewDownload, isToggleKeyboa
   const { complete, stopped } = backgroundPage.serpdigger.runner.current;
   let { delayInputEmptied } = backgroundPage.serpdigger.runner.miscellaneous;
   delayInputEmptied = !!delayInputEmptied;
-  const { running, emailsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
+  const { running, urlsFoundInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
   const { saveDialogOpened, downloaded, downloadedAs } = backgroundPage.serpdigger.runner.download;
   const { checkingAccount } = backgroundPage.serpdigger;
   let addClass = "";
@@ -601,8 +598,8 @@ function updateDownloadButton(previewDownload = $previewDownload, isToggleKeyboa
     previewDownload.removeClass().addClass("btn btn-lg btn-block");
     cancelDownloadButtonPulsate();
   }
-  if (emailsFoundInfo.length > 0) {
-    const noNewEmailsSinceLastPartialDownload = downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.emailsAdded === 0;
+  if (urlsFoundInfo.length > 0) {
+    const noNewUrlsSinceLastPartialDownload = downloaded && downloadedAs === "PARTIAL" && partialDownloadInfo.urlsAdded === 0;
     if (backgroundPage.serpdigger.paid) {
       if (!isToggleKeyboardNavigation) {
         if (checkingAccount || partialDownloadInfo.preparing || saveDialogOpened || (delayInputEmptied && running))
@@ -617,7 +614,7 @@ function updateDownloadButton(previewDownload = $previewDownload, isToggleKeyboa
       updateDownloadButtonText(
         complete || stopped
           ? `${helper.keyboardNavigationEnabled && !disable ? "[D]" : "D"}OWNLOAD${
-              !checkingAccount && noNewEmailsSinceLastPartialDownload ? " AGAIN" : ""
+              !checkingAccount && noNewUrlsSinceLastPartialDownload ? " AGAIN" : ""
             }`
           : !partialDownloadInfo.preparing && !saveDialogOpened
           ? `${helper.keyboardNavigationEnabled && !disable ? "[R]" : "R"}EALTIME PREVIEW`
@@ -629,19 +626,19 @@ function updateDownloadButton(previewDownload = $previewDownload, isToggleKeyboa
     } else {
       if (!isToggleKeyboardNavigation) {
         if (!checkingAccount && (complete || stopped)) addClass = `btn-success pulsate-fwd`;
-        else if (running && emailsFoundInfo.length >= 10 && !delayInputEmptied)
+        else if (running && urlsFoundInfo.length >= 10 && !delayInputEmptied)
           addClass = `btn-success ${!saveDialogOpened && (!downloaded || downloadedAs === "PARTIAL") ? "pulsate-bck" : ""}`;
         else if (running) addClass = "btn-outline-secondary";
         previewDownload.addClass(addClass);
       }
       const disable = !previewDownload.hasClass("btn-success");
       previewDownload.attr("disabled", disable);
-      if ((complete || stopped) && noNewEmailsSinceLastPartialDownload)
+      if ((complete || stopped) && noNewUrlsSinceLastPartialDownload)
         updateDownloadButtonText(`${helper.keyboardNavigationEnabled && !disable ? "[D]" : "D"}OWNLOAD AGAIN`, previewDownload);
       else if (running && (!downloaded || downloadedAs === "TRIAL" || downloadedAs === "PARTIAL")) {
         updateDownloadButtonText(
           `${helper.keyboardNavigationEnabled && !disable ? "[D]" : "D"}${
-            emailsFoundInfo.length < 10 ? "OWNLOAD" : `OWNLOAD ${helper.keyboardNavigationEnabled && !disable ? "1ST" : "FIRST"} 10`
+            urlsFoundInfo.length < 10 ? "OWNLOAD" : `OWNLOAD ${helper.keyboardNavigationEnabled && !disable ? "1ST" : "FIRST"} 10`
           }`,
           previewDownload
         );
@@ -652,7 +649,7 @@ function updateDownloadButton(previewDownload = $previewDownload, isToggleKeyboa
       !checkingAccount &&
       !saveDialogOpened &&
       (complete || stopped) &&
-      (!downloaded || (downloadedAs === "PARTIAL" && partialDownloadInfo.emailsAdded > 0))
+      (!downloaded || (downloadedAs === "PARTIAL" && partialDownloadInfo.urlsAdded > 0))
     )
       addDownloadButtonPulsate(10000, previewDownload);
   } else if (!isToggleKeyboardNavigation) {
@@ -684,7 +681,7 @@ async function redFocusDelayInput(enabled = true) {
 async function buildTable(table = $table, tableFooter = $tableFooter) {
   table.bootstrapTable({
     columns: [
-      { title: "EMAIL", field: "EMAIL", align: "center", valign: "middle" },
+      { title: "URL", field: "URL", align: "center", valign: "middle" },
       { title: "KEYWORD", field: "KEYWORD", align: "center", valign: "middle" },
       { title: "LOCATION", field: "LOCATION", align: "center", valign: "middle" }
     ],
@@ -702,7 +699,7 @@ async function buildTable(table = $table, tableFooter = $tableFooter) {
   });
 }
 
-async function updateTable(data = backgroundPage.serpdigger.runner.current.emailsFoundInfo) {
+async function updateTable(data = backgroundPage.serpdigger.runner.current.urlsFoundInfo) {
   data.fixedScroll = true;
   $table.bootstrapTable("load", data);
 }
@@ -722,13 +719,13 @@ async function showCompleteOnPreviewModal() {
 
 $("#partial-download").hover(
   () => {
-    if (backgroundPage.serpdigger.runner.current.partialDownloadInfo.emailsAdded > 0)
+    if (backgroundPage.serpdigger.runner.current.partialDownloadInfo.urlsAdded > 0)
       $partialDownloadBadge.stop().fadeOut("fast", () => {
         $partialDownloadBadge.hide();
       });
   },
   () => {
-    if (backgroundPage.serpdigger.runner.current.partialDownloadInfo.emailsAdded > 0)
+    if (backgroundPage.serpdigger.runner.current.partialDownloadInfo.urlsAdded > 0)
       $partialDownloadBadge.stop().fadeIn("fast", () => {
         $partialDownloadBadge.show();
       });
@@ -825,7 +822,6 @@ $("#toggle").click(async function toogle() {
       });
     }
   } else if (isInputEmpty($keywordInput)) redFocusInput($keywordInput);
-  else if (isInputEmpty($patternInput)) redFocusInput($patternInput);
   else if (isInputEmpty($locationInput)) redFocusInput($locationInput);
   else if (isInputEmpty($delayInput)) redFocusInput($delayInput);
   else {
@@ -852,7 +848,7 @@ $("#toggle").click(async function toogle() {
   }
 });
 
-$("#help").click(() => window.open("http://www.serpdigger.com/help", "_blank"));
+$("#help").click(() => window.open("http://xtralead.xtralead.com/help", "_blank"));
 
 $("#partial-download").click(() => backgroundPage.serpdigger.download());
 
@@ -918,7 +914,7 @@ $("#preview-modal").on("hide.bs.modal", () => document.activeElement.tagName !==
 
 function onPreviewModalHide() {
   $hiddenTableContent.hide();
-  if (helper.copyEmailDialogIsVisible) return;
+  if (helper.copyUrlDialogIsVisible) return;
   $table.bootstrapTable("resetSearch");
   backgroundPage.serpdigger.runner.miscellaneous.isTableContentVisible = false;
   if (backgroundPage.serpdigger.runner.current.complete) {
@@ -942,12 +938,12 @@ $(() => {
     document.body.removeChild(el);
   };
   $("#preview-modal").on("click-row.bs.table", (row, $element, field) => {
-    helper.copyEmailDialogIsVisible = true;
+    helper.copyUrlDialogIsVisible = true;
     $previewModal.modal("hide");
     const dialog = bootbox.dialog({
       size: "sm",
       title: "<img src='../logo/logo-16.png' class='rounded'/> <span style='font-size: 15px; font-weight: 500;'>Serpdigger</span>",
-      message: "<span style='font-size: 14.5px;'>Copy the selected email to clipboard?</span>",
+      message: "<span style='font-size: 14.5px;'>Copy the selected url to clipboard?</span>",
       buttons: {
         CANCEL: {
           label: `${helper.keyboardNavigationEnabled ? "[C]" : "C"}ANCEL`,
@@ -957,7 +953,7 @@ $(() => {
           label: `${helper.keyboardNavigationEnabled ? "[D]" : "D"}O IT!`,
           className: "copy btn-sm btn-primary",
           callback() {
-            helper.copyEmailRequest = true;
+            helper.copyUrlRequest = true;
           }
         }
       },
@@ -965,19 +961,19 @@ $(() => {
       backdrop: true
     });
     dialog.on("hidden.bs.modal", () => {
-      helper.copyEmailDialogIsVisible = undefined;
+      helper.copyUrlDialogIsVisible = undefined;
       const { running } = backgroundPage.serpdigger.runner.current;
       if (running) {
         $previewModal.modal("show");
-        if (helper.copyEmailRequest) {
-          copyToClipboard($element.EMAIL);
+        if (helper.copyUrlRequest) {
+          copyToClipboard($element.URL);
           if (!helper.showingMessage) {
             helper.showingMessage = true;
-            message.info("Email copied to clipboard!", 1200, () => {
+            message.info("Url copied to clipboard!", 1200, () => {
               helper.showingMessage = false;
             });
           }
-          helper.copyEmailRequest = undefined;
+          helper.copyUrlRequest = undefined;
         }
       } else onPreviewModalHide();
     });
@@ -1034,7 +1030,7 @@ hotkeys("l,ctrl+l,s,ctrl+s,e,r,ctrl+r,d,ctrl+d,h,ctrl+h,p,ctrl+p,c", (event, han
       case "d":
       case "ctrl+d":
         if (helper.helpDialogIsVisible) openDocumentation();
-        else if (helper.copyEmailDialogIsVisible) $(".modal.bootbox > .modal-dialog > .modal-content > .modal-footer > .copy").click();
+        else if (helper.copyUrlDialogIsVisible) $(".modal.bootbox > .modal-dialog > .modal-content > .modal-footer > .copy").click();
         else if (((paid && (complete || stopped)) || !paid) && isDownloadButtonEnabled()) {
           $previewDownload.focus(); // Ensures to change focus avoiding to clear text when pressing esc attempting to close modal
           $previewDownload.click();
@@ -1075,7 +1071,7 @@ function toggleHotkeysTip() {
     $(".modal.bootbox > .modal-dialog > .modal-content > .modal-footer > .stop").text(
       `${helper.keyboardNavigationEnabled ? "[E]" : "E"}XACTLY`
     );
-  } else if (helper.copyEmailDialogIsVisible) {
+  } else if (helper.copyUrlDialogIsVisible) {
     $(".modal.bootbox > .modal-dialog > .modal-content > .modal-footer > .cancel").text(
       `${helper.keyboardNavigationEnabled ? "[C]" : "C"}ANCEL`
     );
@@ -1116,25 +1112,25 @@ window.addEventListener("keydown", e => {
 
 function restoreState() {
   const { complete, running, waiting, allQueries } = backgroundPage.serpdigger.runner.current;
-  const { queryInfo, emailsFoundInfo, deepSearchInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
+  const { queryInfo, urlsFoundInfo, deepSearchInfo, partialDownloadInfo } = backgroundPage.serpdigger.runner.current;
   const { defaultQueryRunningStatus, defaultQueryWaitingStatus, defaultQueryPausedStatus } = backgroundPage.serpdigger.runner.defaults;
   const { defaultQueryResumingStatus, defaultQueryPreparingStatus, defaultDeepSearchStatus } = backgroundPage.serpdigger.runner.defaults;
   let { checkingAccount, paid } = backgroundPage.serpdigger;
   const { saveDialogOpening, saveDialogOpened } = backgroundPage.serpdigger.runner.download;
   const { uiMessageOnDelayTurn, delayInputEmptied } = backgroundPage.serpdigger.runner.miscellaneous;
   updateButtons($("#toggle"), $("#preview-download"));
-  disableInputs(running, $("#cse-address-input"), $("#keyword-input"), $("#pattern-input"), $("#location-input"));
-  // Updates immediately to the last emails found whether the process is not completed, otherwise if was completed in background
-  // will be animatedly updated later from 0 to the total of emails found on showCompletedStats function
+  disableInputs(running, $("#cse-address-input"), $("#keyword-input"), $("#location-input"));
+  // Updates immediately to the last urls found whether the process is not completed, otherwise if was completed in background
+  // will be animatedly updated later from 0 to the total of urls found on showCompletedStats function
   if (!complete)
-    updateEmailsFoundControls(
-      emailsFoundInfo.length,
-      emailsFoundInfo.length > 0 ? "text-success" : "text-muted",
+    updateUrlsFoundControls(
+      urlsFoundInfo.length,
+      urlsFoundInfo.length > 0 ? "text-success" : "text-muted",
       false,
-      $("#collected-emails"),
-      $("#collected-emails-subtext")
+      $("#collected-urls"),
+      $("#collected-urls-subtext")
     );
-  updateCollectedEmailsSubtext(`unique email${emailsFoundInfo.length !== 1 ? "s" : ""}`, $("#collected-emails-subtext"));
+  updateCollectedUrlsSubtext(`unique url${urlsFoundInfo.length !== 1 ? "s" : ""}`, $("#collected-urls-subtext"));
   updateCurrentQueryNumber(
     allQueries.length > 0 ? (!waiting ? queryInfo.currentIndex + 1 : queryInfo.currentIndex) : 0,
     $("#current-query")
@@ -1177,7 +1173,7 @@ function restoreState() {
     if (deepSearchInfo.running) updateDeepSearchStatusText(defaultDeepSearchStatus, $("#deep-search-status-text"));
     showCurrentQueryContent($("#runner-status-query"));
     showProgressStatusIndicator($("#progress-running"));
-    showCollectedEmailsCounter($("#collected-emails-counter"));
+    showCollectedUrlsCounter($("#collected-urls-counter"));
     buildTable($("#table"), $("#table-footer"));
   }
 }
